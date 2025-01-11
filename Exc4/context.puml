@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Container>
+
+Person(client, "Клиент")
+Person(csManager, "Менеджер кол-центра")
+Person_Ext(cspManager, "Менеджер партнерского кол-центра")
+Person(backManager, "Менеджер бэк офиса")
+
+System(abs,"АБС")
+System(callCenter,"Кол-центр")
+System_Ext(pcallCenter,"Партнерский кол-центр")
+Rel(client,csManager,"Запрашиавет информацию")
+Rel(client,cspManager,"Запрашиавет информацию")
+Rel(backManager, abs, "Устанавливает ставки")
+Rel(abs, callCenter, "Отправляет ставки")
+Rel(abs, pcallCenter, "Отправляет файл со ставками")
+Rel(callCenter, pcallCenter, "Переадресовывает звонки")
+Rel(csManager, callCenter, "Просматривает информацию по ставкам")
+Rel(cspManager, pcallCenter, "Просматривает информацию по ставкам")
+
+@enduml 

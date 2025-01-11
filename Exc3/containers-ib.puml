@@ -1,0 +1,80 @@
+@startuml
+!include <C4/C4_Container>
+AddContainerTag("db", $sprite="database_server", $legendText="database container")
+AddElementTag("storage", $shape=RoundedBoxShape(), $bgColor="lightSkyBlue", $fontColor="white")
+AddElementTag("bus", $shape=RoundedBoxShape(), $bgColor="lightSkyBlue", $fontColor="white")
+AddElementTag("microService", $shape=EightSidedShape(), $bgColor="CornflowerBlue", $fontColor="white", $legendText="micro service (eight sided)")
+
+Person(newclient, "Новый клиент")
+Person(client, "Клиент")
+Person(csManager, "Менеджер кол-центра")
+Person(frontManager, "Менеджер фронт офиса")
+Person(backManager, "Менеджер бэк офиса")
+
+System_Boundary(site, "Сайт", "") {
+  Container(siteui, "UI", "React.js")  
+  Container(sitebackend, "Backend", "PHP")  
+  ContainerDb(sitedb, "База", "MSSQL")  
+}
+
+
+
+System_Boundary(ib, "Интернет банк", "") {
+  Container(ibui, "UI+Back", "ASP.NET MVC")  
+  Container(ibdp, "ib-dp-service", "netcore","",$tags="microService")  
+  ContainerDb(ibdb, "База ИБ", "MS SQL")  
+  ContainerDb(ibdbdp, "База сервиса депозитов", "MS SQL")  
+}
+
+System_Boundary(abs, "АБС", "") {
+  Container(absui, "UI", "Delphi")
+  Container(absdpapi, "abs-dp-service", "Java", "Сервис для обеспечания работы депозитов", $tags="microService")
+  ContainerDb(absdb, "DB", "Oracle, PL-SQL")
+  ContainerDb(absdbdp, "База сервиса депозитов", "Oracle, PL-SQL")
+}
+
+Container_Boundary(bus, "Kafka") {
+  Container(bus_rates, "Очередь изменения ставок","", $tags = "bus")
+  Container(bus_rates_personal, "Очередь изменения специальных предложений","", $tags = "bus")
+  Container(bus_requests, "Очередь заявок","", $tags = "bus")
+  Container(bus_requests_dp, "Очередь депозитов","", $tags = "bus")
+}
+
+System(callCenter, "Кол-центр")
+System(smsGateway, "СМС Шлюз")
+
+
+Rel(newclient, siteui, "Просматривает предложения, отправляет заявки на депозит")
+Rel(siteui, sitebackend, "Запрашивает информацию")
+Rel(sitebackend, sitedb , "Хранит данные")
+Rel(sitebackend, bus_rates , "Получает ставки")
+Rel(sitebackend, bus_requests , "Отправляет заявки на депозит")
+
+Rel(newclient, csManager, "Оставляет завявки на депозит")
+Rel(csManager, callCenter, "Оформляет заявки на депозит")
+
+Rel(client, ibui, "Просматривает персональные предложения, размещает депозиты")
+Rel(ibui, ibdb, "Хранит данные")
+Rel(ibdp, ibdb, "Хранит данные")
+Rel(ibdp, ibdbdp, "Хранит данные")
+Rel(ibui, ibdp, "Отправляет запросы")
+Rel(ibdp, bus_rates_personal, "Получает персональные предложения")
+Rel(ibdp, bus_requests_dp, "Размещает депозиты")
+Rel(ibdp, smsGateway, "Отправляет нотификации")
+
+Rel(callCenter, bus_rates, "Отправляет заявки")
+
+Rel(absui, absdb, "Хранит данные")
+Rel(absdpapi, absdb, "Хранит данные")
+Rel(absdpapi, absdbdp, "Хранит данные")
+Rel(absui, absdpapi, "Получает заявки, изменяет ставки", "http")
+Rel(absdpapi, bus_rates, "Обновление ставок")
+Rel(absdpapi, bus_rates_personal, "Обновление персональных ставок")
+Rel(absdpapi, bus_requests_dp, "Получение депозитов")
+Rel(absdpapi, bus_requests, "Получение запросов")
+
+Rel(backManager, absui, "Управляет ставками, согласовывает заявки")
+
+Rel(frontManager, absui, "Оформляет заявки")
+
+@enduml 

@@ -1,0 +1,54 @@
+@startuml
+!include <C4/C4_Container>
+AddContainerTag("db", $sprite="database_server", $legendText="database container")
+AddElementTag("storage", $shape=RoundedBoxShape(), $bgColor="lightSkyBlue", $fontColor="white")
+AddElementTag("bus", $shape=RoundedBoxShape(), $bgColor="lightSkyBlue", $fontColor="white")
+AddElementTag("microService", $shape=EightSidedShape(), $bgColor="CornflowerBlue", $fontColor="white", $legendText="micro service (eight sided)")
+
+Person(client, "Клиент")
+Person(ccManager, "Менеджер кол-центра")
+Person_Ext(ccpManager, "Менеджер партнерского кол-центра")
+Person(backManager, "Менеджер бэк офиса")
+
+System_Boundary(abs, "АБС", "") {
+  Container(absui, "UI", "Delphi")
+  Container(absdpapi, "abs-dp-service", "Java", "Сервис для обеспечания работы депозитов", $tags="microService")
+  ContainerDb(absdb, "DB", "Oracle, PL-SQL")
+  ContainerDb(absdbdp, "База сервиса депозитов", "Oracle, PL-SQL")
+  Container(abstoccp, "abs-to-ccp-int", "Java", "Сервис отправки ставок в партнерский кол центр")
+}
+
+Container_Boundary(bus, "Kafka") {
+  Container(bus_rates, "Очередь изменения ставок","", $tags = "bus")
+  Container(bus_requests, "Очередь заявок","", $tags = "bus")
+}
+
+System_Boundary(callCenter, "Кол-центр"){
+  Container(ccui, "Интерфейс кол-центра")
+  Container(ccback, "Бэкенд колцентра")
+}
+
+System_Boundary(pcallCenter, "Партнерский кол-центр"){
+  Container_Ext(pccui, "Система партнерского кол-центра")
+}
+
+Rel(backManager, absui, "Вводит ставки")
+Rel(absui, absdb, "Хранит данные")
+Rel(absdpapi, absdb, "Хранит данные")
+Rel(absdpapi, absdbdp, "Хранит данные")
+Rel(absui, absdpapi, "Изменяет ставки", "http")
+Rel(absdpapi, bus_rates, "Обновление ставок")
+Rel(absdpapi, bus_requests, "Получение запросов")
+
+Rel(ccManager, ccui, "Просматривает ставки")
+Rel(ccpManager, pccui, "Просматривает ставки")
+Rel(client, ccManager, "Запрашивает информацию")
+Rel(client, ccpManager, "Запрашивает информацию")
+
+Rel(ccui, ccback, "Запрашивает информацию")
+Rel(ccback, bus_rates, "Получает ставки")
+
+Rel(abstoccp, bus_rates, "Получает ставки")
+Rel(abstoccp, pccui, "Отправляет ставки", "sftp")
+
+@enduml 
